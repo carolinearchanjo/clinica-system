@@ -10,10 +10,7 @@ const buscarPrevisaoClima = async (data, cidade) => {
     const resp = await axios.get(url, { timeout: 5000 });
     const dataAlvo = new Date(data).toISOString().split('T')[0];
 
-    const previsao = resp.data.list.find((item) => {
-      return item.dt_txt.startsWith(dataAlvo);
-    });
-
+    const previsao = resp.data.list.find((item) => item.dt_txt.startsWith(dataAlvo));
     if (!previsao) return null;
 
     const temChuva = previsao.weather.some((w) =>
@@ -33,9 +30,8 @@ const buscarPrevisaoClima = async (data, cidade) => {
 
 const criarAgendamento = async (req, res) => {
   try {
-    const { medico, especialidade, data, horario, observacoes, enderecoConsulta } = req.body;
+    const { pacienteId, medico, especialidade, data, horario, observacoes, enderecoConsulta } = req.body;
 
-    // Verificar disponibilidade
     const conflito = await Agendamento.findOne({ medico, data, horario, status: { $ne: 'cancelado' } });
     if (conflito) {
       return res.status(409).json({
@@ -44,12 +40,14 @@ const criarAgendamento = async (req, res) => {
       });
     }
 
-    // Buscar previsão do tempo usando a cidade do endereço informado
     const cidade = enderecoConsulta?.cidade || null;
     const previsaoClimatica = await buscarPrevisaoClima(data, cidade);
 
+    // Admin/secretário pode agendar para outro paciente
+    const paciente = pacienteId || req.usuario._id;
+
     const agendamento = await Agendamento.create({
-      paciente: req.usuario._id,
+      paciente,
       medico,
       especialidade,
       data,
