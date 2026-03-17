@@ -8,14 +8,9 @@ const agendamentoSchema = new mongoose.Schema(
       required: [true, 'Paciente é obrigatório']
     },
     medico: {
-      type: String,
-      required: [true, 'Médico é obrigatório'],
-      trim: true
-    },
-    especialidade: {
-      type: String,
-      required: [true, 'Especialidade é obrigatória'],
-      trim: true
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Medico',
+      required: [true, 'Médico é obrigatório']
     },
     data: {
       type: Date,
@@ -52,7 +47,7 @@ const agendamentoSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Índice para evitar conflito de horário por médico
+// Índice único por médico + data + horário
 agendamentoSchema.index({ medico: 1, data: 1, horario: 1 }, { unique: true });
 
 module.exports = mongoose.model('Agendamento', agendamentoSchema);

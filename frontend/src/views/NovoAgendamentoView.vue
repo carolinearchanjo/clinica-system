@@ -9,26 +9,17 @@
       <div class="card form-card">
         <form @submit.prevent="agendar">
 
-          <!-- Seleção de paciente (só para admin/secretário) -->
+          <!-- Seleção de paciente (admin/secretário) -->
           <div v-if="auth.podeGerenciar" class="form-section">
             <h3>Paciente</h3>
             <div class="form-group" style="position:relative">
               <label class="form-label">Buscar e selecionar paciente</label>
-              <input
-                v-model="buscaPaciente"
-                type="text"
-                class="form-input"
-                placeholder="Digite o nome ou e-mail do paciente..."
-                @input="onBuscaPaciente"
-                @blur="fecharDropdown"
-                autocomplete="off"
-              />
+              <input v-model="buscaPaciente" type="text" class="form-input"
+                placeholder="Digite o nome ou e-mail..." @input="onBuscaPaciente"
+                @blur="fecharDropdown" autocomplete="off" />
               <div v-if="mostrarDropdown && pacientes.length" class="paciente-dropdown">
-                <div
-                  v-for="p in pacientes" :key="p._id"
-                  class="paciente-option"
-                  @mousedown.prevent="selecionarPaciente(p)"
-                >
+                <div v-for="p in pacientes" :key="p._id" class="paciente-option"
+                  @mousedown.prevent="selecionarPaciente(p)">
                   <div class="paciente-nome">{{ p.nome }}</div>
                   <div class="text-sm text-muted">{{ p.email }}</div>
                 </div>
@@ -51,7 +42,8 @@
             <div class="form-row">
               <div class="form-group">
                 <label class="form-label">Especialidade *</label>
-                <select v-model="form.especialidade" class="form-input" :class="{ error: erros.especialidade }">
+                <select v-model="form.especialidade" class="form-input" :class="{ error: erros.especialidade }"
+                  @change="onEspecialidadeChange">
                   <option value="">Selecione...</option>
                   <option v-for="e in especialidades" :key="e" :value="e">{{ e }}</option>
                 </select>
@@ -59,11 +51,14 @@
               </div>
               <div class="form-group">
                 <label class="form-label">Médico *</label>
-                <select v-model="form.medico" class="form-input" :class="{ error: erros.medico }">
-                  <option value="">Selecione...</option>
-                  <option v-for="m in medicosFiltrados" :key="m" :value="m">{{ m }}</option>
+                <select v-model="form.medicoId" class="form-input" :class="{ error: erros.medicoId }"
+                  :disabled="!form.especialidade || carregandoMedicos" @change="onMedicoChange">
+                  <option value="">
+                    {{ carregandoMedicos ? 'Carregando...' : form.especialidade ? 'Selecione...' : 'Selecione a especialidade primeiro' }}
+                  </option>
+                  <option v-for="m in medicosFiltrados" :key="m._id" :value="m._id">{{ m.nome }}</option>
                 </select>
-                <span v-if="erros.medico" class="form-error">{{ erros.medico }}</span>
+                <span v-if="erros.medicoId" class="form-error">{{ erros.medicoId }}</span>
               </div>
             </div>
 
@@ -82,7 +77,7 @@
                     class="horario-btn" :class="{ selecionado: form.horario === h }"
                     @click="form.horario = h">{{ h }}</button>
                 </div>
-                <div v-else-if="form.data && form.medico" class="text-sm text-muted">
+                <div v-else-if="form.data && form.medicoId" class="text-sm text-muted">
                   Sem horários disponíveis nesta data
                 </div>
                 <div v-else class="text-sm text-muted">Selecione médico e data</div>
@@ -119,7 +114,6 @@
             </div>
           </div>
 
-          <!-- Clima -->
           <div v-if="clima" class="clima-card mt-3">
             <div class="clima-header">
               <img :src="clima.icone" alt="" class="clima-icone" />
@@ -128,15 +122,9 @@
                 <div class="text-sm text-muted">{{ clima.temperaturaMin }}° – {{ clima.temperaturaMax }}°C • {{ clima.cidade }}</div>
               </div>
             </div>
-            <div v-if="clima.alertaChuva" class="alert alert-chuva mt-2">
-              🌧️ {{ clima.alertaChuva }}
-            </div>
+            <div v-if="clima.alertaChuva" class="alert alert-chuva mt-2">🌧️ {{ clima.alertaChuva }}</div>
           </div>
-
-          <div v-if="erroClima" class="alert alert-chuva mt-3">
-            🌤️ {{ erroClima }}
-          </div>
-
+          <div v-if="erroClima" class="alert alert-chuva mt-3">🌤️ {{ erroClima }}</div>
           <div v-if="erroGeral" class="alert alert-erro mt-2">⚠️ {{ erroGeral }}</div>
           <div v-if="sucesso" class="alert alert-sucesso mt-2">✅ {{ sucesso }}</div>
 
@@ -154,7 +142,7 @@
 </template>
 
 <script setup>
-import { reactive, ref, computed, watch } from 'vue'
+import { reactive, ref, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '@/services/api'
 import { useAuthStore } from '@/store/auth'
@@ -164,14 +152,18 @@ const auth = useAuthStore()
 
 const buscandoCep = ref(false)
 const buscandoHorarios = ref(false)
+const carregandoMedicos = ref(false)
 const enviando = ref(false)
 const erroGeral = ref('')
 const erroClima = ref('')
 const sucesso = ref('')
 const horariosDisponiveis = ref([])
 const clima = ref(null)
+const especialidades = ref([])
+const todosMedicos = ref([])
+const medicosFiltrados = ref([])
 
-// Busca de paciente
+// Busca paciente
 const pacientes = ref([])
 const pacienteSelecionado = ref('')
 const nomePacienteSelecionado = ref('')
@@ -179,34 +171,43 @@ const buscaPaciente = ref('')
 const mostrarDropdown = ref(false)
 let debounceTimer = null
 
-const especialidades = ['Clínica Geral', 'Cardiologia', 'Dermatologia', 'Ginecologia', 'Neurologia', 'Ortopedia', 'Pediatria', 'Psiquiatria']
-const medicos = {
-  'Clínica Geral': ['Dr. Carlos Mendes', 'Dra. Ana Lima'],
-  'Cardiologia': ['Dr. Roberto Faria', 'Dra. Patricia Souza'],
-  'Dermatologia': ['Dra. Juliana Costa', 'Dr. Marcos Pinto'],
-  'Ginecologia': ['Dra. Fernanda Alves', 'Dra. Camila Rocha'],
-  'Neurologia': ['Dr. Eduardo Neves'],
-  'Ortopedia': ['Dr. Sérgio Mota', 'Dr. Ricardo Leal'],
-  'Pediatria': ['Dra. Beatriz Santos', 'Dr. Lucas Ferreira'],
-  'Psiquiatria': ['Dra. Mônica Vieira']
-}
-
-const medicosFiltrados = computed(() => medicos[form.especialidade] || [])
-
 const form = reactive({
-  especialidade: '', medico: '', data: '', horario: '',
+  especialidade: '', medicoId: '', data: '', horario: '',
   observacoes: '', cep: '', logradouro: '', bairro: '', cidade: '', uf: '', numero: ''
 })
-const erros = reactive({ especialidade: '', medico: '', data: '', horario: '' })
+const erros = reactive({ especialidade: '', medicoId: '', data: '', horario: '' })
 
 const dataMinima = computed(() => {
   const d = new Date(); d.setDate(d.getDate() + 1)
   return d.toISOString().split('T')[0]
 })
 
-watch(() => form.especialidade, () => { form.medico = ''; horariosDisponiveis.value = [] })
-watch(() => form.medico, () => { if (form.data) buscarDisponibilidade() })
 watch(() => form.cidade, () => { if (form.data) buscarClima() })
+
+// Carrega especialidades e médicos ao montar
+onMounted(async () => {
+  try {
+    const { data } = await api.get('/medicos?ativo=true')
+    todosMedicos.value = data.medicos || []
+    const espSet = new Set(todosMedicos.value.map(m => m.especialidade))
+    especialidades.value = [...espSet].sort()
+  } catch {}
+})
+
+const onEspecialidadeChange = () => {
+  form.medicoId = ''
+  form.horario = ''
+  horariosDisponiveis.value = []
+  medicosFiltrados.value = todosMedicos.value.filter(
+    m => m.especialidade === form.especialidade && m.ativo
+  )
+}
+
+const onMedicoChange = () => {
+  form.horario = ''
+  horariosDisponiveis.value = []
+  if (form.data) buscarDisponibilidade()
+}
 
 // Paciente dropdown
 const onBuscaPaciente = () => {
@@ -242,17 +243,17 @@ const fecharDropdown = () => {
 }
 
 const buscarDisponibilidade = async () => {
-  if (!form.medico || !form.data) return
+  if (!form.medicoId || !form.data) return
   buscandoHorarios.value = true
   form.horario = ''
   try {
-    const { data } = await api.get('/agendamentos/disponibilidade', { params: { medico: form.medico, data: form.data } })
+    const { data } = await api.get('/agendamentos/disponibilidade', {
+      params: { medicoId: form.medicoId, data: form.data }
+    })
     horariosDisponiveis.value = data.horariosDisponiveis || []
   } catch {
     horariosDisponiveis.value = []
-  } finally {
-    buscandoHorarios.value = false
-  }
+  } finally { buscandoHorarios.value = false }
   buscarClima()
 }
 
@@ -286,16 +287,14 @@ const buscarCep = async () => {
       form.uf = data.uf
       buscarClima()
     }
-  } catch {} finally {
-    buscandoCep.value = false
-  }
+  } catch {} finally { buscandoCep.value = false }
 }
 
 const validar = () => {
   Object.keys(erros).forEach(k => erros[k] = '')
   let ok = true
   if (!form.especialidade) { erros.especialidade = 'Selecione a especialidade'; ok = false }
-  if (!form.medico) { erros.medico = 'Selecione o médico'; ok = false }
+  if (!form.medicoId) { erros.medicoId = 'Selecione o médico'; ok = false }
   if (!form.data) { erros.data = 'Selecione a data'; ok = false }
   if (!form.horario) { erros.horario = 'Selecione o horário'; ok = false }
   return ok
@@ -308,8 +307,7 @@ const agendar = async () => {
   try {
     await api.post('/agendamentos', {
       pacienteId: pacienteSelecionado.value || undefined,
-      medico: form.medico,
-      especialidade: form.especialidade,
+      medicoId: form.medicoId,
       data: form.data,
       horario: form.horario,
       observacoes: form.observacoes,
@@ -322,9 +320,7 @@ const agendar = async () => {
     setTimeout(() => router.push('/agendamentos'), 1500)
   } catch (err) {
     erroGeral.value = err.response?.data?.message || 'Erro ao agendar'
-  } finally {
-    enviando.value = false
-  }
+  } finally { enviando.value = false }
 }
 </script>
 
@@ -350,48 +346,24 @@ const agendar = async () => {
 .endereco-resumo { background: var(--verde-pale); padding: 8px 12px; border-radius: var(--radius-sm); color: var(--verde); border: 1px solid var(--verde-menta); }
 .form-actions { display: flex; gap: 12px; justify-content: flex-end; }
 .paciente-dropdown {
-  position: absolute;
-  top: calc(100% + 4px);
-  left: 0; right: 0;
-  background: var(--branco);
-  border: 1.5px solid var(--verde-claro);
-  border-radius: var(--radius-sm);
-  box-shadow: var(--sombra-hover);
-  z-index: 50;
-  max-height: 220px;
-  overflow-y: auto;
+  position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+  background: var(--branco); border: 1.5px solid var(--verde-claro);
+  border-radius: var(--radius-sm); box-shadow: var(--sombra-hover); z-index: 50;
+  max-height: 220px; overflow-y: auto;
 }
-.paciente-option {
-  padding: 10px 14px;
-  cursor: pointer;
-  border-bottom: 1px solid var(--creme-escuro);
-  transition: background 0.12s;
-}
+.paciente-option { padding: 10px 14px; cursor: pointer; border-bottom: 1px solid var(--creme-escuro); transition: background 0.12s; }
 .paciente-option:last-child { border-bottom: none; }
 .paciente-option:hover { background: var(--verde-pale); }
 .paciente-nome { font-weight: 500; }
 .paciente-vazio { padding: 12px 14px; }
 .paciente-selecionado {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: var(--verde-pale);
-  border: 1px solid var(--verde-menta);
-  border-radius: var(--radius-sm);
-  padding: 8px 12px;
-  font-size: 13px;
-  color: var(--verde);
-  font-weight: 500;
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--verde-pale); border: 1px solid var(--verde-menta);
+  border-radius: var(--radius-sm); padding: 8px 12px; font-size: 13px; color: var(--verde); font-weight: 500;
 }
 .limpar-paciente {
-  background: none;
-  border: 1px solid var(--verde-menta);
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  color: var(--verde);
-  font-size: 12px;
-  padding: 3px 8px;
-  transition: all 0.15s;
+  background: none; border: 1px solid var(--verde-menta); border-radius: var(--radius-sm);
+  cursor: pointer; color: var(--verde); font-size: 12px; padding: 3px 8px; transition: all 0.15s;
 }
 .limpar-paciente:hover { background: var(--verde); color: #fff; }
 </style>

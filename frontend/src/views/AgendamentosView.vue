@@ -74,11 +74,18 @@
           </div>
           <div v-if="ag.observacoes" class="ag-obs text-sm mt-1">{{ ag.observacoes }}</div>
         </div>
-        <div v-if="ag.status === 'agendado'" class="ag-acoes">
-          <button class="btn btn-danger btn-sm" @click="cancelarPaciente(ag._id)" :disabled="cancelando === ag._id">
+        <div class="ag-acoes">
+          <button
+            v-if="ag.status === 'agendado' || ag.status === 'confirmado'"
+            class="btn btn-danger btn-sm"
+            @click="cancelarPaciente(ag._id)"
+            :disabled="cancelando === ag._id">
             <span v-if="cancelando === ag._id" class="spinner"></span>
             Cancelar
           </button>
+          <span v-else-if="statusFinal(ag.status)" class="status-final text-sm text-muted">
+            {{ ag.status === 'realizado' ? '✅ Realizado' : '❌ Cancelado' }}
+          </span>
         </div>
       </div>
     </div>
@@ -116,7 +123,11 @@
               <span v-else class="text-muted">—</span>
             </td>
             <td>
-              <select class="form-input" style="width:130px;padding:6px 10px;font-size:13px"
+              <!-- Status final: só exibe badge, sem select -->
+              <span v-if="statusFinal(ag.status)" class="badge" :class="`badge-${ag.status}`">
+                {{ ag.status }}
+              </span>
+              <select v-else class="form-input" style="width:130px;padding:6px 10px;font-size:13px"
                 :value="ag.status" @change="atualizarStatus(ag._id, $event.target.value)">
                 <option value="agendado">Agendado</option>
                 <option value="confirmado">Confirmado</option>
@@ -125,10 +136,14 @@
               </select>
             </td>
             <td>
-              <button v-if="ag.status !== 'cancelado'" class="btn btn-danger btn-sm"
-                @click="atualizarStatus(ag._id, 'cancelado')" :disabled="cancelando === ag._id">
+              <button
+                v-if="!statusFinal(ag.status)"
+                class="btn btn-danger btn-sm"
+                @click="atualizarStatus(ag._id, 'cancelado')"
+                :disabled="cancelando === ag._id">
                 Cancelar
               </button>
+              <span v-else class="text-sm text-muted">—</span>
             </td>
           </tr>
         </tbody>
@@ -154,7 +169,6 @@ const agendamentos = ref([])
 const pagina = ref(1)
 const totalPaginas = ref(1)
 
-// Filtros paciente
 const filtroStatus = ref('todos')
 const statusOpcoes = [
   { value: 'todos', label: 'Todos' },
@@ -164,8 +178,9 @@ const statusOpcoes = [
   { value: 'cancelado', label: 'Cancelados' }
 ]
 
-// Filtros admin
 const filtroAdm = reactive({ status: '', data: '', medico: '' })
+
+const statusFinal = (s) => s === 'cancelado' || s === 'realizado'
 
 const agendamentosExibidos = computed(() => {
   if (auth.podeGerenciar) return agendamentos.value
@@ -178,7 +193,6 @@ const formatarMes = (d) => new Date(d).toLocaleDateString('pt-BR', { month: 'sho
 const formatarAno = (d) => new Date(d).getFullYear()
 const formatarData = (d) => new Date(d).toLocaleDateString('pt-BR', { timeZone: 'UTC' })
 
-// Paciente cancela o próprio
 const cancelarPaciente = async (id) => {
   if (!confirm('Confirma o cancelamento desta consulta?')) return
   cancelando.value = id
@@ -191,7 +205,6 @@ const cancelarPaciente = async (id) => {
   } finally { cancelando.value = null }
 }
 
-// Admin/secretário atualiza status
 const atualizarStatus = async (id, status) => {
   cancelando.value = id
   try {
@@ -248,7 +261,8 @@ onMounted(async () => {
 .ag-especialidade { font-weight: 500; }
 .ag-detalhes { display: flex; gap: 12px; flex-wrap: wrap; }
 .ag-obs { color: var(--texto-suave); font-style: italic; }
-.ag-acoes { display: flex; align-items: flex-start; }
+.ag-acoes { display: flex; align-items: flex-start; flex-shrink: 0; }
 .clima-badge { color: var(--aviso); background: var(--aviso-pale); padding: 1px 8px; border-radius: 10px; font-size: 11px; }
+.status-final { font-size: 12px; }
 .paginacao { display: flex; align-items: center; gap: 12px; justify-content: flex-end; padding-top: 12px; border-top: 1px solid var(--borda); }
 </style>
