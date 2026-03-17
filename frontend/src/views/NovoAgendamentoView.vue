@@ -15,8 +15,8 @@
             <div class="form-group" style="position:relative">
               <label class="form-label">Buscar e selecionar paciente</label>
               <input v-model="buscaPaciente" type="text" class="form-input"
-                placeholder="Digite o nome ou e-mail..." @input="onBuscaPaciente"
-                @blur="fecharDropdown" autocomplete="off" />
+                placeholder="Digite o nome ou e-mail..."
+                @input="onBuscaPaciente" @blur="fecharDropdown" autocomplete="off" />
               <div v-if="mostrarDropdown && pacientes.length" class="paciente-dropdown">
                 <div v-for="p in pacientes" :key="p._id" class="paciente-option"
                   @mousedown.prevent="selecionarPaciente(p)">
@@ -65,9 +65,12 @@
             <div class="form-row">
               <div class="form-group">
                 <label class="form-label">Data *</label>
-                <input v-model="form.data" type="date" class="form-input" :class="{ error: erros.data }"
-                  :min="dataMinima" @change="buscarDisponibilidade" />
-                <span v-if="erros.data" class="form-error">{{ erros.data }}</span>
+                <CalendarioAgendamento
+                  v-model="form.data"
+                  :medicoId="form.medicoId"
+                  @change="buscarDisponibilidade"
+                />
+                <span v-if="erros.data" class="form-error mt-1">{{ erros.data }}</span>
               </div>
               <div class="form-group">
                 <label class="form-label">Horário *</label>
@@ -114,6 +117,7 @@
             </div>
           </div>
 
+          <!-- Clima -->
           <div v-if="clima" class="clima-card mt-3">
             <div class="clima-header">
               <img :src="clima.icone" alt="" class="clima-icone" />
@@ -146,6 +150,7 @@ import { reactive, ref, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '@/services/api'
 import { useAuthStore } from '@/store/auth'
+import CalendarioAgendamento from '@/components/CalendarioAgendamento.vue'
 
 const router = useRouter()
 const auth = useAuthStore()
@@ -163,7 +168,7 @@ const especialidades = ref([])
 const todosMedicos = ref([])
 const medicosFiltrados = ref([])
 
-// Busca paciente
+// Busca paciente (admin/secretário)
 const pacientes = ref([])
 const pacienteSelecionado = ref('')
 const nomePacienteSelecionado = ref('')
@@ -177,14 +182,15 @@ const form = reactive({
 })
 const erros = reactive({ especialidade: '', medicoId: '', data: '', horario: '' })
 
-const dataMinima = computed(() => {
-  const d = new Date(); d.setDate(d.getDate() + 1)
-  return d.toISOString().split('T')[0]
+watch(() => form.especialidade, () => {
+  form.medicoId = ''
+  form.data = ''
+  form.horario = ''
+  horariosDisponiveis.value = []
 })
 
 watch(() => form.cidade, () => { if (form.data) buscarClima() })
 
-// Carrega especialidades e médicos ao montar
 onMounted(async () => {
   try {
     const { data } = await api.get('/medicos?ativo=true')
@@ -196,26 +202,24 @@ onMounted(async () => {
 
 const onEspecialidadeChange = () => {
   form.medicoId = ''
+  form.data = ''
   form.horario = ''
   horariosDisponiveis.value = []
-  medicosFiltrados.value = todosMedicos.value.filter(
-    m => m.especialidade === form.especialidade && m.ativo
-  )
+  medicosFiltrados.value = todosMedicos.value.filter(m => m.especialidade === form.especialidade && m.ativo)
 }
 
 const onMedicoChange = () => {
+  form.data = ''
   form.horario = ''
   horariosDisponiveis.value = []
-  if (form.data) buscarDisponibilidade()
 }
 
-// Paciente dropdown
+// Dropdown paciente
 const onBuscaPaciente = () => {
   mostrarDropdown.value = true
   clearTimeout(debounceTimer)
   debounceTimer = setTimeout(() => buscarPacientes(buscaPaciente.value), 300)
 }
-
 const buscarPacientes = async (busca) => {
   if (!busca || busca.length < 2) { pacientes.value = []; return }
   try {
@@ -223,7 +227,6 @@ const buscarPacientes = async (busca) => {
     pacientes.value = data.pacientes || []
   } catch {}
 }
-
 const selecionarPaciente = (p) => {
   pacienteSelecionado.value = p._id
   nomePacienteSelecionado.value = `${p.nome} (${p.email})`
@@ -231,26 +234,22 @@ const selecionarPaciente = (p) => {
   pacientes.value = []
   mostrarDropdown.value = false
 }
-
 const limparPaciente = () => {
   pacienteSelecionado.value = ''
   nomePacienteSelecionado.value = ''
   buscaPaciente.value = ''
 }
+const fecharDropdown = () => { setTimeout(() => { mostrarDropdown.value = false }, 150) }
 
-const fecharDropdown = () => {
-  setTimeout(() => { mostrarDropdown.value = false }, 150)
-}
-
-const buscarDisponibilidade = async () => {
-  if (!form.medicoId || !form.data) return
+const buscarDisponibilidade = async (data) => {
+  const dataAlvo = data || form.data
+  if (!form.medicoId || !dataAlvo) return
+  if (data) form.data = data
   buscandoHorarios.value = true
   form.horario = ''
   try {
-    const { data } = await api.get('/agendamentos/disponibilidade', {
-      params: { medicoId: form.medicoId, data: form.data }
-    })
-    horariosDisponiveis.value = data.horariosDisponiveis || []
+    const resp = await api.get('/agendamentos/disponibilidade', { params: { medicoId: form.medicoId, data: dataAlvo } })
+    horariosDisponiveis.value = resp.data.horariosDisponiveis || []
   } catch {
     horariosDisponiveis.value = []
   } finally { buscandoHorarios.value = false }
@@ -259,17 +258,12 @@ const buscarDisponibilidade = async () => {
 
 const buscarClima = async () => {
   if (!form.data) return
-  clima.value = null
-  erroClima.value = ''
+  clima.value = null; erroClima.value = ''
   try {
-    const { data } = await api.get('/clima', {
-      params: { data: form.data, cidade: form.cidade || undefined }
-    })
+    const { data } = await api.get('/clima', { params: { data: form.data, cidade: form.cidade || undefined } })
     if (data.success) clima.value = data.clima
   } catch (err) {
-    if (err.response?.status === 404) {
-      erroClima.value = 'Previsão do tempo disponível apenas para os próximos 5 dias.'
-    }
+    if (err.response?.status === 404) erroClima.value = 'Previsão do tempo disponível apenas para os próximos 5 dias.'
   }
 }
 
@@ -302,8 +296,7 @@ const validar = () => {
 
 const agendar = async () => {
   if (!validar()) return
-  enviando.value = true
-  erroGeral.value = ''
+  enviando.value = true; erroGeral.value = ''
   try {
     await api.post('/agendamentos', {
       pacienteId: pacienteSelecionado.value || undefined,
@@ -328,7 +321,7 @@ const agendar = async () => {
 .page-title { display: flex; flex-direction: column; gap: 4px; }
 .back-link { font-size: 13px; color: var(--texto-suave); }
 .page-title h1 { font-size: 26px; }
-.agendar-layout { max-width: 680px; }
+.agendar-layout { max-width: 720px; }
 .form-section h3 { font-size: 16px; font-family: var(--fonte-display); margin-bottom: 16px; color: var(--verde); }
 .form-section { display: flex; flex-direction: column; gap: 14px; }
 .horarios-grid { display: flex; flex-wrap: wrap; gap: 8px; }

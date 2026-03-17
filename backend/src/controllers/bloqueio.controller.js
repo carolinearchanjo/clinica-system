@@ -24,7 +24,6 @@ const criarBloqueio = async (req, res) => {
       return res.status(400).json({ success: false, message: 'medicoId e data são obrigatórios' });
     }
 
-    // Se horario=null, bloqueia dia inteiro — verifica se já tem agendamentos
     if (!horario) {
       const temAgendamento = await Agendamento.exists({
         medico: medicoId,
@@ -38,7 +37,6 @@ const criarBloqueio = async (req, res) => {
         });
       }
     } else {
-      // Verifica se horário específico tem agendamento
       const temAgendamento = await Agendamento.exists({
         medico: medicoId,
         data: new Date(data),
@@ -91,4 +89,26 @@ const removerBloqueiosDoDia = async (req, res) => {
   }
 };
 
-module.exports = { listarBloqueios, criarBloqueio, removerBloqueio, removerBloqueiosDoDia };
+const bloqueiosMes = async (req, res) => {
+  try {
+    const { medicoId, inicio, fim } = req.query;
+    if (!medicoId || !inicio || !fim) {
+      return res.status(400).json({ success: false, message: 'medicoId, inicio e fim são obrigatórios' });
+    }
+    const bloqueios = await BloqueioAgenda.find({
+      medico: medicoId,
+      horario: null,
+      data: { $gte: new Date(inicio), $lte: new Date(fim) }
+    }).select('data');
+
+    const diasBloqueados = bloqueios.map(b =>
+      new Date(b.data).toISOString().split('T')[0]
+    );
+
+    res.json({ success: true, diasBloqueados });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+module.exports = { listarBloqueios, criarBloqueio, removerBloqueio, removerBloqueiosDoDia, bloqueiosMes };

@@ -76,4 +76,15 @@ const listarEspecialidades = async (req, res) => {
   }
 };
 
-module.exports = { listar, criar, atualizar, excluir, listarEspecialidades };
+const buscarPorId = async (req, res) => {
+  try {
+    const medico = await Medico.findById(req.params.id)
+    if (!medico) return res.status(404).json({ success: false, message: 'Médico não encontrado' })
+    res.json({ success: true, medico })
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message })
+  }
+}
+
+
+module.exports = { listar, criar, atualizar, excluir, listarEspecialidades, buscarPorId };

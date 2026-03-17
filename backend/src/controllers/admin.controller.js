@@ -16,7 +16,7 @@ const listarAgendamentos = async (req, res) => {
     const total = await Agendamento.countDocuments(filtro);
     const agendamentos = await Agendamento.find(filtro)
       .populate('paciente', 'nome email telefone cpf')
-      .populate('medico', 'nome especialidade crm')
+      .populate('medico', 'nome especialidade crm')   // <-- essa linha
       .sort({ data: -1, horario: -1 })
       .skip((page - 1) * limit)
       .limit(Number(limit));
@@ -34,22 +34,40 @@ const atualizarStatusAgendamento = async (req, res) => {
     if (!statusValidos.includes(status)) {
       return res.status(400).json({ success: false, message: 'Status inválido' });
     }
+
     const agendamento = await Agendamento.findById(req.params.id);
     if (!agendamento) {
       return res.status(404).json({ success: false, message: 'Agendamento não encontrado' });
     }
+
     if (STATUS_FINAIS.includes(agendamento.status)) {
       return res.status(400).json({
         success: false,
         message: `Agendamento já está ${agendamento.status} e não pode ser alterado`
       });
     }
+
+    // Impede marcar como realizado se ainda não chegou o horário
+    if (status === 'realizado') {
+      const [hora, minuto] = agendamento.horario.split(':').map(Number);
+      const dataHoraConsulta = new Date(agendamento.data);
+      dataHoraConsulta.setUTCHours(hora, minuto, 0, 0);
+
+      if (dataHoraConsulta > new Date()) {
+        return res.status(400).json({
+          success: false,
+          message: 'Não é possível marcar como realizado antes do horário da consulta'
+        });
+      }
+    }
+
     agendamento.status = status;
     await agendamento.save();
     await agendamento.populate([
       { path: 'paciente', select: 'nome email' },
       { path: 'medico', select: 'nome especialidade' }
     ]);
+
     res.json({ success: true, agendamento });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
