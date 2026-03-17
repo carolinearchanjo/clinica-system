@@ -13,8 +13,24 @@ const climaRoutes = require('./routes/clima.routes');
 const app = express();
 
 // Middlewares
+const origensPermitidas = [
+  'http://localhost:5173',
+  process.env.FRONTEND_URL,
+].filter(Boolean);
+
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  origin: (origin, callback) => {
+    // Permite requisições sem origin (ex: Postman, curl)
+    if (!origin) return callback(null, true);
+    // Permite qualquer subdomínio do Vercel ou origem cadastrada
+    if (
+      origensPermitidas.includes(origin) ||
+      origin.endsWith('.vercel.app')
+    ) {
+      return callback(null, true);
+    }
+    callback(new Error('Origem não permitida pelo CORS'));
+  },
   credentials: true
 }));
 app.use(express.json());

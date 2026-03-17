@@ -1,11 +1,11 @@
 const axios = require('axios');
 const Agendamento = require('../models/Agendamento');
 
-const buscarPrevisaoClima = async (data) => {
+const buscarPrevisaoClima = async (data, cidade) => {
   try {
     const apiKey = process.env.OPENWEATHER_API_KEY;
-    const cidade = process.env.OPENWEATHER_CITY || 'São Paulo';
-    const url = `https://api.openweathermap.org/data/2.5/forecast?q=${encodeURIComponent(cidade)}&appid=${apiKey}&units=metric&lang=pt_br`;
+    const cidadeBusca = cidade || process.env.OPENWEATHER_CITY || 'São Paulo';
+    const url = `https://api.openweathermap.org/data/2.5/forecast?q=${encodeURIComponent(cidadeBusca)}&appid=${apiKey}&units=metric&lang=pt_br`;
 
     const resp = await axios.get(url, { timeout: 5000 });
     const dataAlvo = new Date(data).toISOString().split('T')[0];
@@ -44,8 +44,9 @@ const criarAgendamento = async (req, res) => {
       });
     }
 
-    // Buscar previsão do tempo
-    const previsaoClimatica = await buscarPrevisaoClima(data);
+    // Buscar previsão do tempo usando a cidade do endereço informado
+    const cidade = enderecoConsulta?.cidade || null;
+    const previsaoClimatica = await buscarPrevisaoClima(data, cidade);
 
     const agendamento = await Agendamento.create({
       paciente: req.usuario._id,

@@ -46,15 +46,19 @@ const router = createRouter({
 })
 
 router.beforeEach((to, from, next) => {
-  const auth = useAuthStore()
+  const token = localStorage.getItem('token')
+  const usuario = JSON.parse(localStorage.getItem('usuario') || 'null')
 
-  if (to.meta.requerAuth && !auth.autenticado) {
+  const autenticado = !!token
+  const podeGerenciar = ['admin', 'secretario'].includes(usuario?.perfil)
+
+  if (to.meta.requerAuth && !autenticado) {
     return next('/login')
   }
-  if (to.meta.publica && auth.autenticado) {
+  if (to.meta.publica && autenticado) {
     return next('/dashboard')
   }
-  if (to.meta.requerAdmin && !auth.podeGerenciar) {
+  if (to.meta.requerAdmin && !podeGerenciar) {
     return next('/dashboard')
   }
   next()

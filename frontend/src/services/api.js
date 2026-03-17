@@ -17,9 +17,13 @@ api.interceptors.response.use(
   (res) => res,
   (err) => {
     if (err.response?.status === 401) {
-      localStorage.removeItem('token')
-      localStorage.removeItem('usuario')
-      window.location.href = '/login'
+      const rotasPublicas = ['/login', '/cadastro']
+      const rotaAtual = window.location.pathname
+      if (!rotasPublicas.includes(rotaAtual)) {
+        localStorage.removeItem('token')
+        localStorage.removeItem('usuario')
+        window.location.href = '/login'
+      }
     }
     return Promise.reject(err)
   }
