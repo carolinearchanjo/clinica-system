@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
 const mongoose = require('mongoose');
+const rateLimit = require('express-rate-limit');
 
 const authRoutes = require('./routes/auth.routes');
 const agendamentoRoutes = require('./routes/agendamento.routes');
@@ -14,6 +15,27 @@ const bloqueioRoutes = require('./routes/bloqueio.routes');
 
 const app = express();
 
+// Rate limiting
+const limiterGeral = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Muitas requisições. Tente novamente em 15 minutos.' }
+});
+
+const limiterLogin = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Muitas tentativas de login. Tente novamente em 15 minutos.' }
+});
+
+app.use('/api', limiterGeral);
+app.use('/api/auth/login', limiterLogin);
+
+// CORS
 const origensPermitidas = [
   'http://localhost:5173',
   process.env.FRONTEND_URL,
@@ -29,9 +51,11 @@ app.use(cors({
   },
   credentials: true
 }));
+
 app.use(express.json());
 app.use(morgan('dev'));
 
+// Rotas
 app.use('/api/auth', authRoutes);
 app.use('/api/agendamentos', agendamentoRoutes);
 app.use('/api/admin', adminRoutes);
@@ -40,10 +64,12 @@ app.use('/api/clima', climaRoutes);
 app.use('/api/medicos', medicoRoutes);
 app.use('/api/bloqueios', bloqueioRoutes);
 
+// Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// Handler de erros global
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(err.status || 500).json({
@@ -52,6 +78,7 @@ app.use((err, req, res, next) => {
   });
 });
 
+// Conexão com MongoDB
 mongoose
   .connect(process.env.MONGODB_URI)
   .then(() => {
