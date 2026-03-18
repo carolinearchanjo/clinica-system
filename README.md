@@ -1,6 +1,8 @@
 # 🏥 ClinicaFácil — Sistema de Atendimento Inteligente
 
-Sistema web para gerenciamento de consultas médicas, desenvolvido com **Vue.js** (frontend) e **Node.js + Express** (backend), com autenticação JWT, integração com APIs externas e painel administrativo.
+Sistema web completo para gerenciamento de consultas médicas em clínicas de pequeno porte, com agendamento, gestão de médicos, controle de agenda e painel administrativo.
+
+🌐 **Deploy:** [clinica-system-coral.vercel.app](https://clinica-system-coral.vercel.app)
 
 ---
 
@@ -15,17 +17,40 @@ Sistema web para gerenciamento de consultas médicas, desenvolvido com **Vue.js*
 | API de CEP | ViaCEP (https://viacep.com.br) |
 | API de Clima | OpenWeatherMap (forecast) |
 | Validação | express-validator |
+| Deploy Frontend | Vercel |
+| Deploy Backend | Railway |
 
 ---
 
 ## 📋 Funcionalidades
 
-- ✅ **Cadastro e login** de usuários com perfis: `paciente`, `secretario`, `admin`
-- ✅ **Agendamento de consultas** com verificação de disponibilidade por médico/data
-- ✅ **Consulta de CEP** automática via ViaCEP no cadastro e agendamento
-- ✅ **Previsão do tempo** no dia da consulta via OpenWeatherMap, com alerta de chuva
-- ✅ **Painel administrativo** com filtros, atualização de status e gestão de usuários
-- ✅ **Proteção de rotas** por perfil via middleware JWT
+### Autenticação e Perfis
+- ✅ Cadastro e login com perfis: `paciente`, `secretario`, `admin`
+- ✅ Proteção de rotas por perfil via middleware JWT
+- ✅ Edição de perfil com preenchimento automático de endereço por CEP
+
+### Agendamento (Paciente)
+- ✅ Calendário visual customizado mostrando dias com atendimento disponível por médico
+- ✅ Seleção de especialidade, médico e horário com verificação de disponibilidade em tempo real
+- ✅ Previsão do tempo no dia da consulta via OpenWeatherMap, com alerta de chuva baseado na cidade informada
+- ✅ Cancelamento de consultas agendadas ou confirmadas
+- ✅ Listagem de consultas com filtro por status
+
+### Gestão de Médicos (Secretário/Admin)
+- ✅ Cadastro, edição e desativação de médicos com CRM e especialidade
+- ✅ Grade semanal de atendimento configurável por dia da semana e horários
+- ✅ Visualização da agenda do médico por data com status de cada horário
+- ✅ Bloqueio de horários específicos ou dia inteiro com motivo (imprevistos)
+- ✅ Desbloqueio individual ou do dia inteiro
+
+### Painel Administrativo (Secretário/Admin)
+- ✅ Agendamento de consultas em nome de pacientes com busca por nome/e-mail
+- ✅ Listagem de todos os agendamentos com filtros por status, data e médico
+- ✅ Atualização de status dos agendamentos (agendado → confirmado → realizado)
+- ✅ Impedimento de marcar como realizado antes do horário da consulta
+- ✅ Consultas canceladas/realizadas não permitem alteração de status
+- ✅ Cadastro, edição e exclusão de pacientes
+- ✅ Cadastro e edição de secretários e admins (somente admin)
 
 ---
 
@@ -35,21 +60,50 @@ Sistema web para gerenciamento de consultas médicas, desenvolvido com **Vue.js*
 clinica-system/
 ├── backend/
 │   ├── src/
-│   │   ├── controllers/    # Lógica de negócio
-│   │   ├── middleware/     # Autenticação JWT
-│   │   ├── models/         # Schemas Mongoose
-│   │   └── routes/         # Definição de rotas
+│   │   ├── controllers/
+│   │   │   ├── admin.controller.js
+│   │   │   ├── agendamento.controller.js
+│   │   │   ├── auth.controller.js
+│   │   │   ├── bloqueio.controller.js
+│   │   │   ├── external.controller.js
+│   │   │   └── medico.controller.js
+│   │   ├── middleware/
+│   │   │   └── auth.middleware.js
+│   │   ├── models/
+│   │   │   ├── Agendamento.js
+│   │   │   ├── BloqueioAgenda.js
+│   │   │   ├── Medico.js
+│   │   │   └── Usuario.js
+│   │   ├── routes/
+│   │   │   ├── admin.routes.js
+│   │   │   ├── agendamento.routes.js
+│   │   │   ├── auth.routes.js
+│   │   │   ├── bloqueio.routes.js
+│   │   │   ├── cep.routes.js
+│   │   │   ├── clima.routes.js
+│   │   │   └── medico.routes.js
+│   │   └── server.js
 │   ├── .env.example
 │   └── package.json
 └── frontend/
     ├── src/
-    │   ├── assets/         # CSS global
-    │   ├── components/     # NavBar
-    │   ├── router/         # Vue Router + guards
-    │   ├── services/       # Axios configurado
+    │   ├── assets/         # CSS global com design system
+    │   ├── components/
+    │   │   ├── CalendarioAgendamento.vue
+    │   │   └── NavBar.vue
+    │   ├── router/         # Vue Router + guards por perfil
+    │   ├── services/       # Axios com interceptor JWT
     │   ├── store/          # Pinia (auth)
-    │   └── views/          # Páginas da aplicação
+    │   └── views/
+    │       ├── AdminView.vue
+    │       ├── AgendamentosView.vue
+    │       ├── CadastroView.vue
+    │       ├── DashboardView.vue
+    │       ├── LoginView.vue
+    │       ├── NovoAgendamentoView.vue
+    │       └── PerfilView.vue
     ├── index.html
+    ├── vercel.json
     └── vite.config.js
 ```
 
@@ -59,7 +113,7 @@ clinica-system/
 
 ### Pré-requisitos
 - Node.js 18+
-- MongoDB rodando localmente (ou URI do MongoDB Atlas)
+- MongoDB rodando localmente ou URI do [MongoDB Atlas](https://mongodb.com/atlas)
 - Chave gratuita do [OpenWeatherMap](https://openweathermap.org/api)
 
 ### 1. Backend
@@ -89,48 +143,78 @@ npm run dev
 | Variável | Descrição | Exemplo |
 |---|---|---|
 | `PORT` | Porta do servidor | `3000` |
-| `MONGODB_URI` | URI de conexão MongoDB | `mongodb://localhost:27017/clinica_db` |
-| `JWT_SECRET` | Chave secreta JWT | `minha_chave_secreta` |
+| `MONGODB_URI` | URI de conexão MongoDB | `mongodb+srv://user:pass@cluster.mongodb.net/clinica_db` |
+| `JWT_SECRET` | Chave secreta JWT | `string_longa_e_aleatoria` |
 | `JWT_EXPIRES_IN` | Tempo de expiração do token | `7d` |
 | `OPENWEATHER_API_KEY` | Chave da API OpenWeatherMap | `abc123...` |
-| `OPENWEATHER_CITY` | Cidade para previsão do tempo | `São Paulo` |
+| `OPENWEATHER_CITY` | Cidade padrão para previsão | `Rio de Janeiro` |
+| `FRONTEND_URL` | URL do frontend em produção | `https://clinica-system-coral.vercel.app` |
+
+### Variável de Ambiente (Frontend — Vercel)
+
+| Variável | Descrição | Exemplo |
+|---|---|---|
+| `VITE_API_URL` | URL base do backend | `https://seu-backend.up.railway.app/api` |
 
 ---
 
 ## 🔌 Endpoints da API
 
 ### Autenticação
-| Método | Rota | Descrição |
+| Método | Rota | Acesso |
 |---|---|---|
-| POST | `/api/auth/cadastrar` | Registrar novo usuário |
-| POST | `/api/auth/login` | Login e obtenção do token |
-| GET | `/api/auth/perfil` | Dados do usuário logado 🔒 |
-| PUT | `/api/auth/perfil` | Atualizar perfil 🔒 |
+| POST | `/api/auth/cadastrar` | Público |
+| POST | `/api/auth/login` | Público |
+| GET | `/api/auth/perfil` | 🔒 Autenticado |
+| PUT | `/api/auth/perfil` | 🔒 Autenticado |
 
 ### Agendamentos
-| Método | Rota | Descrição |
+| Método | Rota | Acesso |
 |---|---|---|
-| POST | `/api/agendamentos` | Criar agendamento 🔒 |
-| GET | `/api/agendamentos/meus` | Listar agendamentos do paciente 🔒 |
-| GET | `/api/agendamentos/disponibilidade?medico=&data=` | Horários disponíveis 🔒 |
-| PATCH | `/api/agendamentos/:id/cancelar` | Cancelar agendamento 🔒 |
+| POST | `/api/agendamentos` | 🔒 Autenticado |
+| GET | `/api/agendamentos/meus` | 🔒 Autenticado |
+| GET | `/api/agendamentos/disponibilidade?medicoId=&data=` | 🔒 Autenticado |
+| PATCH | `/api/agendamentos/:id/cancelar` | 🔒 Autenticado |
+
+### Médicos
+| Método | Rota | Acesso |
+|---|---|---|
+| GET | `/api/medicos` | 🔒 Autenticado |
+| GET | `/api/medicos/especialidades` | 🔒 Autenticado |
+| GET | `/api/medicos/:id` | 🔒 Autenticado |
+| POST | `/api/medicos` | 🔒 Secretário/Admin |
+| PATCH | `/api/medicos/:id` | 🔒 Secretário/Admin |
+| DELETE | `/api/medicos/:id` | 🔒 Secretário/Admin |
+
+### Bloqueios de Agenda
+| Método | Rota | Acesso |
+|---|---|---|
+| GET | `/api/bloqueios?medicoId=&data=` | 🔒 Secretário/Admin |
+| GET | `/api/bloqueios/mes?medicoId=&inicio=&fim=` | 🔒 Secretário/Admin |
+| POST | `/api/bloqueios` | 🔒 Secretário/Admin |
+| DELETE | `/api/bloqueios/dia` | 🔒 Secretário/Admin |
+| DELETE | `/api/bloqueios/:id` | 🔒 Secretário/Admin |
 
 ### APIs Externas
-| Método | Rota | Descrição |
+| Método | Rota | Acesso |
 |---|---|---|
-| GET | `/api/cep/:cep` | Buscar endereço pelo CEP 🔒 |
-| GET | `/api/clima?data=YYYY-MM-DD` | Previsão do tempo 🔒 |
+| GET | `/api/cep/:cep` | 🔒 Autenticado |
+| GET | `/api/clima?data=YYYY-MM-DD&cidade=` | 🔒 Autenticado |
 
 ### Administração
-| Método | Rota | Descrição | Perfil |
-|---|---|---|---|
-| GET | `/api/admin/dashboard` | Resumo geral | admin/secretário |
-| GET | `/api/admin/agendamentos` | Listar todos com filtros | admin/secretário |
-| PATCH | `/api/admin/agendamentos/:id/status` | Atualizar status | admin/secretário |
-| GET | `/api/admin/usuarios` | Listar usuários | admin |
-| PATCH | `/api/admin/usuarios/:id` | Alterar perfil/status | admin |
-
-> 🔒 = Requer token JWT no header `Authorization: Bearer <token>`
+| Método | Rota | Acesso |
+|---|---|---|
+| GET | `/api/admin/dashboard` | 🔒 Secretário/Admin |
+| GET | `/api/admin/agendamentos` | 🔒 Secretário/Admin |
+| PATCH | `/api/admin/agendamentos/:id/status` | 🔒 Secretário/Admin |
+| GET | `/api/admin/agenda-medico?medicoId=&data=` | 🔒 Secretário/Admin |
+| GET | `/api/admin/pacientes` | 🔒 Secretário/Admin |
+| POST | `/api/admin/pacientes` | 🔒 Secretário/Admin |
+| PATCH | `/api/admin/pacientes/:id` | 🔒 Secretário/Admin |
+| DELETE | `/api/admin/pacientes/:id` | 🔒 Secretário/Admin |
+| GET | `/api/admin/usuarios` | 🔒 Admin |
+| POST | `/api/admin/usuarios` | 🔒 Admin |
+| PATCH | `/api/admin/usuarios/:id` | 🔒 Admin |
 
 ---
 
@@ -143,40 +227,82 @@ npm run dev
 4. Cada requisição inclui: Authorization: Bearer <token>
 5. Middleware verifica e decodifica o token
 6. Rotas protegidas por perfil via middleware autorizar()
+7. Token expirado → redirect automático para /login
 ```
+
+---
+
+## 👥 Perfis de Acesso
+
+| Perfil | Permissões |
+|---|---|
+| `paciente` | Cadastro, login, agendamento, cancelamento e visualização das próprias consultas |
+| `secretario` | Tudo do paciente + gerenciar agenda de médicos, agendar para pacientes, cadastrar/editar pacientes e médicos, atualizar status de consultas |
+| `admin` | Tudo do secretário + cadastrar/editar secretários e outros admins |
 
 ---
 
 ## 🚢 Deploy
 
-### Backend — Railway / Render
-1. Conectar repositório
-2. Configurar variáveis de ambiente
-3. Comando de start: `node src/server.js`
+### Backend — Railway
+1. Conectar repositório GitHub
+2. Configurar **Root Directory** como `backend`
+3. Adicionar variáveis de ambiente na aba **Variables**
+4. Gerar domínio em **Settings → Networking → Generate Domain**
 
-### Frontend — Vercel / Netlify
-1. Build command: `npm run build`
-2. Output directory: `dist`
-3. Configurar variável `VITE_API_URL` com URL do backend
+### Frontend — Vercel
+1. Conectar repositório GitHub
+2. Configurar **Root Directory** como `frontend`
+3. Adicionar variável `VITE_API_URL` apontando para o backend do Railway
+4. Deploy automático a cada push na branch `main`
 
-### MongoDB
-- **Atlas** (recomendado): Criar cluster gratuito em [mongodb.com/atlas](https://mongodb.com/atlas)
-- Configurar `MONGODB_URI` com a connection string do Atlas
+### MongoDB — Atlas
+1. Criar cluster gratuito em [mongodb.com/atlas](https://mongodb.com/atlas)
+2. Criar usuário em **Database Access**
+3. Liberar IPs em **Network Access → Allow Access from Anywhere**
+4. Copiar URI de conexão e adicionar `/clinica_db` antes do `?`
 
 ---
 
-## 👤 Usuário Inicial Admin
+## 👤 Primeiro Usuário Admin
 
-Após subir o sistema, crie o primeiro usuário via `/api/auth/cadastrar` e promova-o a admin diretamente no MongoDB:
+Crie uma conta normalmente pelo site e promova-a a admin diretamente no Atlas:
 
-```js
-db.usuarios.updateOne({ email: "seu@email.com" }, { $set: { perfil: "admin" } })
+1. Atlas → **Browse Collections** → banco `clinica_db` → coleção `usuarios`
+2. Encontre o documento do seu usuário → clique em **Edit**
+3. Mude `perfil` de `"paciente"` para `"admin"` → **Update**
+
+---
+
+## 📌 Observações Técnicas
+
+- A API do OpenWeatherMap gratuita oferece previsão em intervalos de 3h para os próximos 5 dias. Datas além desse período não exibem previsão climática.
+- O model `Agendamento` usa índice único `(medico, data, horario)` para garantir que não haja conflito de horários no banco.
+- Médicos com agendamentos futuros confirmados não podem ser excluídos — apenas desativados.
+- Consultas nos status `cancelado` ou `realizado` são imutáveis.
+- Não é possível marcar uma consulta como `realizado` antes do horário agendado.
+
+---
+
+## 🧪 Acesso para Avaliação
+
+O banco de dados já está populado com dados de demonstração. Use os seguintes acessos para testar o sistema:
+
+| Perfil | E-mail | Senha |
+|---|---|---|
+| **Admin** | admin@clinicafacil.com | Admin@123 |
+| **Secretária** | secretaria@clinicafacil.com | Secr@123 |
+| **Paciente** | joao.silva@email.com | Paciente@123 |
+
+O sistema conta com **10 médicos** de diferentes especialidades, **15 agendamentos** distribuídos entre passados (realizados/cancelados) e futuros (agendados/confirmados), e **5 pacientes** cadastrados.
+
+---
+
+## 🌱 Resetar Dados de Demonstração
+
+Para repovoar o banco do zero a qualquer momento:
+
+```bash
+cd backend
+node src/seed.js
 ```
-
----
-
-## 📌 Observações
-
-- A API do OpenWeatherMap gratuita oferece previsão em intervalos de 3h para os próximos 5 dias.
-- O ViaCEP não requer autenticação.
-- O sistema usa índice único `(medico, data, horario)` para garantir que não haja conflito de horários.

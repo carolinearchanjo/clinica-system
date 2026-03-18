@@ -33,10 +33,10 @@
           </div>
           <div class="form-group">
             <label class="form-label">Data *</label>
-            <input
+            <CalendarioAgendamento
               v-model="agendaFiltro.data"
-              type="date"
-              class="form-input"
+              :medicoId="agendaFiltro.medicoId"
+              :modoAdmin="true"
               @change="buscarAgenda"
             />
           </div>
@@ -861,6 +861,7 @@
 </template>
 
 <script setup>
+import CalendarioAgendamento from '@/components/CalendarioAgendamento.vue'
 import { ref, reactive, computed, onMounted } from "vue";
 import { useAuthStore } from "@/store/auth";
 import api from "@/services/api";
@@ -1683,5 +1684,39 @@ onMounted(async () => {
   border-top: 1px solid var(--borda);
   background: var(--creme);
   flex-shrink: 0;
+}
+
+/* Responsividade mobile */
+@media (max-width: 640px) {
+  .section-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .section-header .filtros {
+    flex: unset;
+  }
+  .section-header > .btn {
+    width: 100%;
+    justify-content: center;
+  }
+  .filtros-row {
+    flex-direction: column;
+  }
+  .filtros-row .form-group {
+    min-width: unset;
+    width: 100%;
+  }
+  .tabs {
+    gap: 2px;
+  }
+  .tab-btn {
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+  .agenda-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
 }
 </style>

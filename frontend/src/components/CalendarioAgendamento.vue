@@ -1,20 +1,28 @@
 <template>
   <div class="calendario">
-    <!-- Cabeçalho do mês -->
     <div class="cal-header">
-      <button type="button" class="cal-nav" @click="mesAnterior" :disabled="!podeMesAnterior">‹</button>
+      <button
+        type="button"
+        class="cal-nav"
+        @click="mesAnterior"
+        :disabled="!podeMesAnterior"
+      >
+        ‹
+      </button>
       <div class="cal-titulo">{{ nomeMes }} {{ anoAtual }}</div>
       <button type="button" class="cal-nav" @click="proximoMes">›</button>
     </div>
 
-    <!-- Dias da semana -->
     <div class="cal-grid">
-      <div v-for="d in diasSemanaLabel" :key="d" class="cal-dia-label">{{ d }}</div>
+      <div v-for="d in diasSemanaLabel" :key="d" class="cal-dia-label">
+        {{ d }}
+      </div>
+      <div
+        v-for="n in inicioPrimeiroDia"
+        :key="'v' + n"
+        class="cal-celula vazio"
+      ></div>
 
-      <!-- Células vazias do início -->
-      <div v-for="n in inicioPrimeiroDia" :key="'v' + n" class="cal-celula vazio"></div>
-
-      <!-- Dias do mês -->
       <button
         v-for="dia in diasDoMes"
         :key="dia.data"
@@ -23,77 +31,119 @@
         :class="{
           hoje: dia.hoje,
           selecionado: dia.data === modelValue,
-          disponivel: dia.disponivel && !dia.passado,
-          indisponivel: !dia.disponivel || dia.passado,
-          passado: dia.passado,
-          bloqueado: dia.bloqueado
+          disponivel: dia.disponivel,
+          indisponivel: !dia.disponivel,
+          passado: dia.passado && !modoAdmin,
+          bloqueado: dia.bloqueado && !modoAdmin,
         }"
-        :disabled="!dia.disponivel || dia.passado || dia.bloqueado"
+        :disabled="
+          !modoAdmin && (!dia.disponivel || dia.passado || dia.bloqueado)
+        "
         @click="selecionar(dia)"
       >
         <span class="cal-num">{{ dia.numero }}</span>
-        <span v-if="dia.disponivel && !dia.passado && !dia.bloqueado" class="cal-dot"></span>
+        <span
+          v-if="dia.disponivel && (!dia.bloqueado || modoAdmin)"
+          class="cal-dot"
+        ></span>
+        <span
+          v-if="dia.bloqueado && modoAdmin"
+          class="cal-dot bloqueado-dot"
+        ></span>
       </button>
     </div>
 
-    <!-- Legenda -->
     <div class="cal-legenda">
-      <div class="legenda-item"><span class="legenda-dot disponivel"></span> Com horários</div>
-      <div class="legenda-item"><span class="legenda-dot indisponivel"></span> Sem atendimento</div>
+      <div class="legenda-item">
+        <span class="legenda-dot disponivel"></span> Com horários
+      </div>
+      <div class="legenda-item">
+        <span class="legenda-dot indisponivel"></span> Sem atendimento
+      </div>
+      <div v-if="modoAdmin" class="legenda-item">
+        <span class="legenda-dot bloqueado"></span> Bloqueado
+      </div>
     </div>
 
-    <div v-if="carregando" class="cal-loading text-sm text-muted">🔄 Verificando disponibilidade...</div>
+    <div v-if="carregando" class="cal-loading text-sm text-muted">
+      🔄 Verificando disponibilidade...
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue'
-import api from '@/services/api'
+import { ref, computed, watch, onMounted } from "vue";
+import api from "@/services/api";
 
 const props = defineProps({
-  modelValue: { type: String, default: '' }, // data selecionada YYYY-MM-DD
-  medicoId: { type: String, default: '' }
-})
+  modelValue: { type: String, default: "" },
+  medicoId: { type: String, default: "" },
+  modoAdmin: { type: Boolean, default: false }, // sem restrição de data passada, todos os dias clicáveis
+});
 
-const emit = defineEmits(['update:modelValue', 'change'])
+const emit = defineEmits(["update:modelValue", "change"]);
 
-const hoje = new Date()
-hoje.setHours(0, 0, 0, 0)
-const amanha = new Date(hoje)
-amanha.setDate(amanha.getDate() + 1)
+const hoje = new Date();
+hoje.setHours(0, 0, 0, 0);
+const amanha = new Date(hoje);
+amanha.setDate(amanha.getDate() + 1);
 
-const mesAtual = ref(hoje.getMonth())
-const anoAtual = ref(hoje.getFullYear())
-const carregando = ref(false)
-const diasComAtendimento = ref(new Set()) // dias da semana que o médico atende: 'domingo','segunda',...
-const diasBloqueados = ref(new Set()) // datas YYYY-MM-DD com bloqueio de dia inteiro
+const mesAtual = ref(hoje.getMonth());
+const anoAtual = ref(hoje.getFullYear());
+const carregando = ref(false);
+const diasComAtendimento = ref(new Set());
+const diasBloqueados = ref(new Set());
 
-const diasSemanaLabel = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
-const nomesMeses = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
-const nomesDB = ['domingo','segunda','terca','quarta','quinta','sexta','sabado']
+const diasSemanaLabel = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+const nomesMeses = [
+  "Janeiro",
+  "Fevereiro",
+  "Março",
+  "Abril",
+  "Maio",
+  "Junho",
+  "Julho",
+  "Agosto",
+  "Setembro",
+  "Outubro",
+  "Novembro",
+  "Dezembro",
+];
+const nomesDB = [
+  "domingo",
+  "segunda",
+  "terca",
+  "quarta",
+  "quinta",
+  "sexta",
+  "sabado",
+];
 
-const nomeMes = computed(() => nomesMeses[mesAtual.value])
+const nomeMes = computed(() => nomesMeses[mesAtual.value]);
 
 const podeMesAnterior = computed(() => {
-  return anoAtual.value > hoje.getFullYear() ||
+  if (props.modoAdmin) return true; // admin pode navegar para meses passados
+  return (
+    anoAtual.value > hoje.getFullYear() ||
     (anoAtual.value === hoje.getFullYear() && mesAtual.value > hoje.getMonth())
-})
+  );
+});
 
 const inicioPrimeiroDia = computed(() => {
-  return new Date(anoAtual.value, mesAtual.value, 1).getDay()
-})
+  return new Date(anoAtual.value, mesAtual.value, 1).getDay();
+});
 
 const diasDoMes = computed(() => {
-  const total = new Date(anoAtual.value, mesAtual.value + 1, 0).getDate()
-  const dias = []
+  const total = new Date(anoAtual.value, mesAtual.value + 1, 0).getDate();
+  const dias = [];
   for (let i = 1; i <= total; i++) {
-    const data = new Date(anoAtual.value, mesAtual.value, i)
-    const dataStr = data.toISOString().split('T')[0]
-    const diaSemana = data.getDay()
-    const nomeDia = nomesDB[diaSemana]
-    const passado = data < amanha
-    const bloqueado = diasBloqueados.value.has(dataStr)
-    const disponivel = diasComAtendimento.value.has(nomeDia)
+    const data = new Date(anoAtual.value, mesAtual.value, i);
+    const dataStr = data.toISOString().split("T")[0];
+    const diaSemana = data.getDay();
+    const nomeDia = nomesDB[diaSemana];
+    const passado = data < amanha;
+    const bloqueado = diasBloqueados.value.has(dataStr);
+    const disponivel = diasComAtendimento.value.has(nomeDia);
 
     dias.push({
       numero: i,
@@ -101,77 +151,87 @@ const diasDoMes = computed(() => {
       passado,
       bloqueado,
       disponivel,
-      hoje: data.toDateString() === hoje.toDateString()
-    })
+      hoje: data.toDateString() === hoje.toDateString(),
+    });
   }
-  return dias
-})
+  return dias;
+});
 
 const carregarDadosMedico = async () => {
   if (!props.medicoId) {
-    diasComAtendimento.value = new Set()
-    diasBloqueados.value = new Set()
-    return
+    diasComAtendimento.value = new Set();
+    diasBloqueados.value = new Set();
+    return;
   }
-  carregando.value = true
+  carregando.value = true;
   try {
-    // Busca horários do médico
-    const { data } = await api.get(`/medicos/${props.medicoId}`)
-    const medico = data.medico
-    const diasAtivos = new Set(
+    const { data } = await api.get(`/medicos/${props.medicoId}`);
+    const medico = data.medico;
+    diasComAtendimento.value = new Set(
       (medico.horariosSemana || [])
-        .filter(h => h.ativo && h.horarios?.length > 0)
-        .map(h => h.dia)
-    )
-    diasComAtendimento.value = diasAtivos
-
-    // Busca bloqueios de dia inteiro do mês atual e próximo
-    await carregarBloqueiosMes()
+        .filter((h) => h.ativo && h.horarios?.length > 0)
+        .map((h) => h.dia),
+    );
+    await carregarBloqueiosMes();
   } catch {
-    diasComAtendimento.value = new Set()
+    diasComAtendimento.value = new Set();
   } finally {
-    carregando.value = false
+    carregando.value = false;
   }
-}
+};
 
 const carregarBloqueiosMes = async () => {
-  if (!props.medicoId) return
+  if (!props.medicoId) return;
   try {
-    // Busca bloqueios do mês visível
-    const ano = anoAtual.value
-    const mes = mesAtual.value
-    const inicio = new Date(ano, mes, 1).toISOString().split('T')[0]
-    const fim = new Date(ano, mes + 1, 0).toISOString().split('T')[0]
-    const { data } = await api.get('/bloqueios/mes', {
-      params: { medicoId: props.medicoId, inicio, fim }
-    })
-    diasBloqueados.value = new Set(data.diasBloqueados || [])
+    const ano = anoAtual.value;
+    const mes = mesAtual.value;
+    const inicio = new Date(ano, mes, 1).toISOString().split("T")[0];
+    const fim = new Date(ano, mes + 1, 0).toISOString().split("T")[0];
+    const { data } = await api.get("/bloqueios/mes", {
+      params: { medicoId: props.medicoId, inicio, fim },
+    });
+    diasBloqueados.value = new Set(data.diasBloqueados || []);
   } catch {
-    diasBloqueados.value = new Set()
+    diasBloqueados.value = new Set();
   }
-}
+};
 
 const mesAnterior = () => {
-  if (!podeMesAnterior.value) return
-  if (mesAtual.value === 0) { mesAtual.value = 11; anoAtual.value-- }
-  else mesAtual.value--
-  carregarBloqueiosMes()
-}
+  if (!podeMesAnterior.value) return;
+  if (mesAtual.value === 0) {
+    mesAtual.value = 11;
+    anoAtual.value--;
+  } else mesAtual.value--;
+  carregarBloqueiosMes();
+};
 
 const proximoMes = () => {
-  if (mesAtual.value === 11) { mesAtual.value = 0; anoAtual.value++ }
-  else mesAtual.value++
-  carregarBloqueiosMes()
-}
+  if (mesAtual.value === 11) {
+    mesAtual.value = 0;
+    anoAtual.value++;
+  } else mesAtual.value++;
+  carregarBloqueiosMes();
+};
 
 const selecionar = (dia) => {
-  if (!dia.disponivel || dia.passado || dia.bloqueado) return
-  emit('update:modelValue', dia.data)
-  emit('change', dia.data)
-}
+  if (!props.modoAdmin && (!dia.disponivel || dia.passado || dia.bloqueado))
+    return;
+  emit("update:modelValue", dia.data);
+  emit("change", dia.data);
+};
 
-watch(() => props.medicoId, () => { carregarDadosMedico() })
-onMounted(() => { if (props.medicoId) carregarDadosMedico() })
+watch(
+  () => props.medicoId,
+  () => {
+    // Volta para o mês atual ao trocar de médico
+    mesAtual.value = hoje.getMonth();
+    anoAtual.value = hoje.getFullYear();
+    carregarDadosMedico();
+  },
+);
+onMounted(() => {
+  if (props.medicoId) carregarDadosMedico();
+});
 </script>
 
 <style scoped>
@@ -197,17 +257,26 @@ onMounted(() => { if (props.medicoId) carregarDadosMedico() })
   background: none;
   border: 1px solid var(--borda);
   border-radius: var(--radius-sm);
-  width: 30px; height: 30px;
+  width: 30px;
+  height: 30px;
   cursor: pointer;
   font-size: 18px;
   color: var(--texto-suave);
-  display: flex; align-items: center; justify-content: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   transition: all 0.15s;
   line-height: 1;
 }
-.cal-nav:hover:not(:disabled) { background: var(--verde-pale); border-color: var(--verde-claro); color: var(--verde); }
-.cal-nav:disabled { opacity: 0.3; cursor: not-allowed; }
-
+.cal-nav:hover:not(:disabled) {
+  background: var(--verde-pale);
+  border-color: var(--verde-claro);
+  color: var(--verde);
+}
+.cal-nav:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
 .cal-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
@@ -236,24 +305,33 @@ onMounted(() => { if (props.medicoId) carregarDadosMedico() })
   transition: all 0.12s;
   gap: 2px;
 }
-.cal-celula.vazio { pointer-events: none; }
-
-.cal-num { font-size: 13px; font-weight: 500; line-height: 1; }
+.cal-celula.vazio {
+  pointer-events: none;
+}
+.cal-num {
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1;
+}
 .cal-dot {
-  width: 4px; height: 4px;
+  width: 4px;
+  height: 4px;
   border-radius: 50%;
   background: var(--verde);
 }
+.cal-dot.bloqueado-dot {
+  background: #e65100;
+}
 
 /* Estados */
-.cal-celula.disponivel:not(.passado):not(.bloqueado) {
+.cal-celula.disponivel {
   color: var(--texto);
 }
-.cal-celula.disponivel:not(.passado):not(.bloqueado):hover {
+.cal-celula.disponivel:hover {
   background: var(--verde-pale);
   color: var(--verde);
 }
-.cal-celula.disponivel:not(.passado):not(.bloqueado) .cal-num {
+.cal-celula.disponivel .cal-num {
   color: var(--verde);
   font-weight: 600;
 }
@@ -261,9 +339,12 @@ onMounted(() => { if (props.medicoId) carregarDadosMedico() })
   background: var(--verde) !important;
   color: #fff !important;
 }
-.cal-celula.selecionado .cal-num { color: #fff !important; }
-.cal-celula.selecionado .cal-dot { background: rgba(255,255,255,0.7); }
-
+.cal-celula.selecionado .cal-num {
+  color: #fff !important;
+}
+.cal-celula.selecionado .cal-dot {
+  background: rgba(255, 255, 255, 0.7);
+}
 .cal-celula.hoje:not(.selecionado) {
   border: 1.5px solid var(--verde-claro);
 }
@@ -280,7 +361,9 @@ onMounted(() => { if (props.medicoId) carregarDadosMedico() })
   cursor: not-allowed;
   background: #fff3e0;
 }
-.cal-celula:disabled { cursor: not-allowed; }
+.cal-celula:disabled {
+  cursor: not-allowed;
+}
 
 /* Legenda */
 .cal-legenda {
@@ -289,6 +372,7 @@ onMounted(() => { if (props.medicoId) carregarDadosMedico() })
   margin-top: 12px;
   padding-top: 10px;
   border-top: 1px solid var(--creme-escuro);
+  flex-wrap: wrap;
 }
 .legenda-item {
   display: flex;
@@ -298,12 +382,19 @@ onMounted(() => { if (props.medicoId) carregarDadosMedico() })
   color: var(--texto-suave);
 }
 .legenda-dot {
-  width: 8px; height: 8px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
 }
-.legenda-dot.disponivel { background: var(--verde); }
-.legenda-dot.indisponivel { background: var(--borda); }
-
+.legenda-dot.disponivel {
+  background: var(--verde);
+}
+.legenda-dot.indisponivel {
+  background: var(--borda);
+}
+.legenda-dot.bloqueado {
+  background: #e65100;
+}
 .cal-loading {
   text-align: center;
   margin-top: 8px;

@@ -9,65 +9,57 @@
 
     <!-- Filtros admin/secretário -->
     <div v-if="auth.podeGerenciar" class="filtros card mt-3">
-      <div class="filtros-row">
-        <div class="form-group">
-          <label class="form-label">Status</label>
-          <select
-            v-model="filtroAdm.status"
-            class="form-input"
-            @change="buscarTodos"
-          >
-            <option value="">Todos</option>
-            <option value="agendado">Agendado</option>
-            <option value="confirmado">Confirmado</option>
-            <option value="realizado">Realizado</option>
-            <option value="cancelado">Cancelado</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Data</label>
-          <input
-            v-model="filtroAdm.data"
-            type="date"
-            class="form-input"
-            @change="buscarTodos"
-          />
-        </div>
-        <div class="form-group">
-          <label class="form-label">Médico</label>
-          <input
-            v-model="filtroAdm.medico"
-            type="text"
-            class="form-input"
-            placeholder="Nome do médico"
-            @keyup.enter="buscarTodos"
-          />
-        </div>
-        <button
-          class="btn btn-primary btn-sm"
-          style="align-self: flex-end"
-          @click="buscarTodos"
+      <div class="form-group">
+        <label class="form-label">Status</label>
+        <select
+          v-model="filtroAdm.status"
+          class="form-input"
+          @change="buscarTodos"
         >
-          Filtrar
-        </button>
+          <option value="">Todos</option>
+          <option value="agendado">Agendado</option>
+          <option value="confirmado">Confirmado</option>
+          <option value="realizado">Realizado</option>
+          <option value="cancelado">Cancelado</option>
+        </select>
       </div>
+      <div class="form-group">
+        <label class="form-label">Data</label>
+        <input
+          v-model="filtroAdm.data"
+          type="date"
+          class="form-input"
+          @change="buscarTodos"
+        />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Médico</label>
+        <input
+          v-model="filtroAdm.medico"
+          type="text"
+          class="form-input"
+          placeholder="Nome do médico"
+          @keyup.enter="buscarTodos"
+        />
+      </div>
+      <button class="btn btn-primary btn-block" @click="buscarTodos">
+        Filtrar
+      </button>
     </div>
 
     <!-- Filtros paciente -->
-    <div v-else class="filtros card mt-3">
-      <div class="filtros-inner">
-        <label class="form-label">Status</label>
-        <div class="filtro-btns">
-          <button
-            v-for="s in statusOpcoes"
-            :key="s.value"
-            class="btn btn-sm"
-            :class="filtroStatus === s.value ? 'btn-primary' : 'btn-secondary'"
-            @click="filtroStatus = s.value"
-          >
-            {{ s.label }}
-          </button>
-        </div>
+    <div v-else class="filtros-paciente card mt-3">
+      <label class="form-label">Status</label>
+      <div class="filtro-btns">
+        <button
+          v-for="s in statusOpcoes"
+          :key="s.value"
+          class="btn btn-sm"
+          :class="filtroStatus === s.value ? 'btn-primary' : 'btn-secondary'"
+          @click="filtroStatus = s.value"
+        >
+          {{ s.label }}
+        </button>
       </div>
     </div>
 
@@ -100,8 +92,12 @@
         <div class="ag-corpo">
           <div class="ag-top">
             <div>
-              <div class="ag-especialidade">{{ ag.especialidade }}</div>
-              <div class="text-sm text-muted">Dr(a). {{ ag.medico }}</div>
+              <div class="ag-especialidade">
+                {{ ag.medico?.especialidade || ag.especialidade }}
+              </div>
+              <div class="text-sm text-muted">
+                {{ ag.medico?.nome || ag.medico }}
+              </div>
             </div>
             <span class="badge" :class="`badge-${ag.status}`">{{
               ag.status
@@ -162,7 +158,7 @@
               </div>
             </td>
             <td>
-              <div>{{ ag.especialidade || ag.medico?.especialidade }}</div>
+              <div>{{ ag.medico?.especialidade || ag.especialidade }}</div>
               <div class="text-sm text-muted">
                 {{ ag.medico?.nome || ag.medico }}
               </div>
@@ -177,7 +173,6 @@
               <span v-else class="text-muted">—</span>
             </td>
             <td>
-              <!-- Status final: só exibe badge, sem select -->
               <span
                 v-if="statusFinal(ag.status)"
                 class="badge"
@@ -344,33 +339,40 @@ onMounted(async () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
 }
 .page-header h1 {
   font-size: 26px;
 }
+
+/* Filtros admin — sempre empilhados */
 .filtros {
-  padding: 14px 20px;
-}
-.filtros-inner {
+  padding: 20px;
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* Filtros paciente */
+.filtros-paciente {
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
   gap: 12px;
-  flex-wrap: wrap;
-}
-.filtros-row {
-  display: flex;
-  gap: 16px;
-  align-items: flex-end;
-  flex-wrap: wrap;
-}
-.filtros-row .form-group {
-  min-width: 140px;
 }
 .filtro-btns {
   display: flex;
-  gap: 6px;
+  gap: 8px;
   flex-wrap: wrap;
 }
+.filtro-btns .btn {
+  flex: 1;
+  min-width: 80px;
+  justify-content: center;
+}
+
+/* Lista cards */
 .lista {
   display: flex;
   flex-direction: column;
@@ -379,50 +381,58 @@ onMounted(async () => {
 .ag-item {
   display: flex;
   align-items: flex-start;
-  gap: 16px;
-  padding: 16px 20px;
+  gap: 12px;
+  padding: 14px 16px;
 }
 .ag-data-bloco {
   text-align: center;
-  min-width: 48px;
+  min-width: 44px;
   flex-shrink: 0;
 }
 .ag-dia {
-  font-size: 22px;
+  font-size: 20px;
   font-family: var(--fonte-display);
   color: var(--verde);
   line-height: 1;
 }
 .ag-mes {
-  font-size: 12px;
+  font-size: 11px;
   text-transform: uppercase;
   color: var(--texto-suave);
 }
 .ag-corpo {
   flex: 1;
+  min-width: 0;
 }
 .ag-top {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
   gap: 8px;
+  flex-wrap: wrap;
 }
 .ag-especialidade {
   font-weight: 500;
 }
 .ag-detalhes {
   display: flex;
-  gap: 12px;
+  gap: 8px;
   flex-wrap: wrap;
+  font-size: 12px;
 }
 .ag-obs {
   color: var(--texto-suave);
   font-style: italic;
+  font-size: 13px;
 }
 .ag-acoes {
   display: flex;
   align-items: flex-start;
   flex-shrink: 0;
+}
+.status-final {
+  font-size: 12px;
+  white-space: nowrap;
 }
 .clima-badge {
   color: var(--aviso);
@@ -431,8 +441,14 @@ onMounted(async () => {
   border-radius: 10px;
   font-size: 11px;
 }
-.status-final {
-  font-size: 12px;
+
+/* Tabela */
+.table-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+table {
+  min-width: 520px;
 }
 .paginacao {
   display: flex;
@@ -441,5 +457,6 @@ onMounted(async () => {
   justify-content: flex-end;
   padding-top: 12px;
   border-top: 1px solid var(--borda);
+  flex-wrap: wrap;
 }
 </style>
