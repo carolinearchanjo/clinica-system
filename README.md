@@ -2,11 +2,11 @@
 
 Sistema web completo para gerenciamento de consultas médicas em clínicas de pequeno porte, com agendamento, gestão de médicos, controle de agenda e painel administrativo.
 
-🌐 **Deploy:** [clinica-system-coral.vercel.app](https://clinica-system-coral.vercel.app)
+**Deploy:** [clinica-system-coral.vercel.app](https://clinica-system-coral.vercel.app)
 
 ---
 
-## 🚀 Tecnologias
+## Tecnologias
 
 | Camada | Tecnologia |
 |---|---|
@@ -22,39 +22,39 @@ Sistema web completo para gerenciamento de consultas médicas em clínicas de pe
 
 ---
 
-## 📋 Funcionalidades
+## Funcionalidades
 
 ### Autenticação e Perfis
-- ✅ Cadastro e login com perfis: `paciente`, `secretario`, `admin`
-- ✅ Proteção de rotas por perfil via middleware JWT
-- ✅ Edição de perfil com preenchimento automático de endereço por CEP
+- Cadastro e login com perfis: `paciente`, `secretario`, `admin`
+- Proteção de rotas por perfil via middleware JWT
+- Edição de perfil com preenchimento automático de endereço por CEP
 
 ### Agendamento (Paciente)
-- ✅ Calendário visual customizado mostrando dias com atendimento disponível por médico
-- ✅ Seleção de especialidade, médico e horário com verificação de disponibilidade em tempo real
-- ✅ Previsão do tempo no dia da consulta via OpenWeatherMap, com alerta de chuva baseado na cidade informada
-- ✅ Cancelamento de consultas agendadas ou confirmadas
-- ✅ Listagem de consultas com filtro por status
+- Calendário visual customizado mostrando dias com atendimento disponível por médico
+- Seleção de especialidade, médico e horário com verificação de disponibilidade em tempo real
+- Previsão do tempo no dia da consulta via OpenWeatherMap, com alerta de chuva baseado na cidade informada
+- Cancelamento de consultas agendadas ou confirmadas
+- Listagem de consultas com filtro por status
 
 ### Gestão de Médicos (Secretário/Admin)
-- ✅ Cadastro, edição e desativação de médicos com CRM e especialidade
-- ✅ Grade semanal de atendimento configurável por dia da semana e horários
-- ✅ Visualização da agenda do médico por data com status de cada horário
-- ✅ Bloqueio de horários específicos ou dia inteiro com motivo (imprevistos)
-- ✅ Desbloqueio individual ou do dia inteiro
+- Cadastro, edição e desativação de médicos com CRM e especialidade
+- Grade semanal de atendimento configurável por dia da semana e horários
+- Visualização da agenda do médico por data com status de cada horário
+- Bloqueio de horários específicos ou dia inteiro com motivo (imprevistos)
+- Desbloqueio individual ou do dia inteiro
 
 ### Painel Administrativo (Secretário/Admin)
-- ✅ Agendamento de consultas em nome de pacientes com busca por nome/e-mail
-- ✅ Listagem de todos os agendamentos com filtros por status, data e médico
-- ✅ Atualização de status dos agendamentos (agendado → confirmado → realizado)
-- ✅ Impedimento de marcar como realizado antes do horário da consulta
-- ✅ Consultas canceladas/realizadas não permitem alteração de status
-- ✅ Cadastro, edição e exclusão de pacientes
-- ✅ Cadastro e edição de secretários e admins (somente admin)
+- Agendamento de consultas em nome de pacientes com busca por nome/e-mail
+- Listagem de todos os agendamentos com filtros por status, data e médico
+- Atualização de status dos agendamentos (agendado → confirmado → realizado)
+- Impedimento de marcar como realizado antes do horário da consulta
+- Consultas canceladas/realizadas não permitem alteração de status
+- Cadastro, edição e exclusão de pacientes
+- Cadastro e edição de secretários e admins (somente admin)
 
 ---
 
-## 🗂️ Estrutura do Projeto
+## Estrutura do Projeto
 
 ```
 clinica-system/
@@ -109,7 +109,7 @@ clinica-system/
 
 ---
 
-## ⚙️ Como Executar Localmente
+## Como Executar Localmente
 
 ### Pré-requisitos
 - Node.js 18+
@@ -138,7 +138,7 @@ npm run dev
 
 ---
 
-## 🌐 Variáveis de Ambiente (Backend)
+## Variáveis de Ambiente (Backend)
 
 | Variável | Descrição | Exemplo |
 |---|---|---|
@@ -158,67 +158,67 @@ npm run dev
 
 ---
 
-## 🔌 Endpoints da API
+## Endpoints da API
 
 ### Autenticação
 | Método | Rota | Acesso |
 |---|---|---|
 | POST | `/api/auth/cadastrar` | Público |
 | POST | `/api/auth/login` | Público |
-| GET | `/api/auth/perfil` | 🔒 Autenticado |
-| PUT | `/api/auth/perfil` | 🔒 Autenticado |
+| GET | `/api/auth/perfil` | Autenticado |
+| PUT | `/api/auth/perfil` | Autenticado |
 
 ### Agendamentos
 | Método | Rota | Acesso |
 |---|---|---|
-| POST | `/api/agendamentos` | 🔒 Autenticado |
-| GET | `/api/agendamentos/meus` | 🔒 Autenticado |
-| GET | `/api/agendamentos/disponibilidade?medicoId=&data=` | 🔒 Autenticado |
-| PATCH | `/api/agendamentos/:id/cancelar` | 🔒 Autenticado |
+| POST | `/api/agendamentos` | Autenticado |
+| GET | `/api/agendamentos/meus` | Autenticado |
+| GET | `/api/agendamentos/disponibilidade?medicoId=&data=` | Autenticado |
+| PATCH | `/api/agendamentos/:id/cancelar` | Autenticado |
 
 ### Médicos
 | Método | Rota | Acesso |
 |---|---|---|
-| GET | `/api/medicos` | 🔒 Autenticado |
-| GET | `/api/medicos/especialidades` | 🔒 Autenticado |
-| GET | `/api/medicos/:id` | 🔒 Autenticado |
-| POST | `/api/medicos` | 🔒 Secretário/Admin |
-| PATCH | `/api/medicos/:id` | 🔒 Secretário/Admin |
-| DELETE | `/api/medicos/:id` | 🔒 Secretário/Admin |
+| GET | `/api/medicos` | Autenticado |
+| GET | `/api/medicos/especialidades` | Autenticado |
+| GET | `/api/medicos/:id` | Autenticado |
+| POST | `/api/medicos` | Secretário/Admin |
+| PATCH | `/api/medicos/:id` | Secretário/Admin |
+| DELETE | `/api/medicos/:id` | Secretário/Admin |
 
 ### Bloqueios de Agenda
 | Método | Rota | Acesso |
 |---|---|---|
-| GET | `/api/bloqueios?medicoId=&data=` | 🔒 Secretário/Admin |
-| GET | `/api/bloqueios/mes?medicoId=&inicio=&fim=` | 🔒 Secretário/Admin |
-| POST | `/api/bloqueios` | 🔒 Secretário/Admin |
-| DELETE | `/api/bloqueios/dia` | 🔒 Secretário/Admin |
-| DELETE | `/api/bloqueios/:id` | 🔒 Secretário/Admin |
+| GET | `/api/bloqueios?medicoId=&data=` | Secretário/Admin |
+| GET | `/api/bloqueios/mes?medicoId=&inicio=&fim=` | Secretário/Admin |
+| POST | `/api/bloqueios` | Secretário/Admin |
+| DELETE | `/api/bloqueios/dia` | Secretário/Admin |
+| DELETE | `/api/bloqueios/:id` | Secretário/Admin |
 
 ### APIs Externas
 | Método | Rota | Acesso |
 |---|---|---|
-| GET | `/api/cep/:cep` | 🔒 Autenticado |
-| GET | `/api/clima?data=YYYY-MM-DD&cidade=` | 🔒 Autenticado |
+| GET | `/api/cep/:cep` | Autenticado |
+| GET | `/api/clima?data=YYYY-MM-DD&cidade=` | Autenticado |
 
 ### Administração
 | Método | Rota | Acesso |
 |---|---|---|
-| GET | `/api/admin/dashboard` | 🔒 Secretário/Admin |
-| GET | `/api/admin/agendamentos` | 🔒 Secretário/Admin |
-| PATCH | `/api/admin/agendamentos/:id/status` | 🔒 Secretário/Admin |
-| GET | `/api/admin/agenda-medico?medicoId=&data=` | 🔒 Secretário/Admin |
-| GET | `/api/admin/pacientes` | 🔒 Secretário/Admin |
-| POST | `/api/admin/pacientes` | 🔒 Secretário/Admin |
-| PATCH | `/api/admin/pacientes/:id` | 🔒 Secretário/Admin |
-| DELETE | `/api/admin/pacientes/:id` | 🔒 Secretário/Admin |
-| GET | `/api/admin/usuarios` | 🔒 Admin |
-| POST | `/api/admin/usuarios` | 🔒 Admin |
-| PATCH | `/api/admin/usuarios/:id` | 🔒 Admin |
+| GET | `/api/admin/dashboard` | Secretário/Admin |
+| GET | `/api/admin/agendamentos` | Secretário/Admin |
+| PATCH | `/api/admin/agendamentos/:id/status` | Secretário/Admin |
+| GET | `/api/admin/agenda-medico?medicoId=&data=` | Secretário/Admin |
+| GET | `/api/admin/pacientes` | Secretário/Admin |
+| POST | `/api/admin/pacientes` | Secretário/Admin |
+| PATCH | `/api/admin/pacientes/:id` | Secretário/Admin |
+| DELETE | `/api/admin/pacientes/:id` | Secretário/Admin |
+| GET | `/api/admin/usuarios` | Admin |
+| POST | `/api/admin/usuarios` | Admin |
+| PATCH | `/api/admin/usuarios/:id` | Admin |
 
 ---
 
-## 🔐 Fluxo de Autenticação JWT
+## Fluxo de Autenticação JWT
 
 ```
 1. Cliente envia POST /api/auth/login com {email, senha}
@@ -232,7 +232,7 @@ npm run dev
 
 ---
 
-## 👥 Perfis de Acesso
+## Perfis de Acesso
 
 | Perfil | Permissões |
 |---|---|
@@ -242,7 +242,7 @@ npm run dev
 
 ---
 
-## 🚢 Deploy
+## Deploy
 
 ### Backend — Railway
 1. Conectar repositório GitHub
@@ -264,7 +264,7 @@ npm run dev
 
 ---
 
-## 👤 Primeiro Usuário Admin
+## Primeiro Usuário Admin
 
 Crie uma conta normalmente pelo site e promova-a a admin diretamente no Atlas:
 
@@ -274,7 +274,7 @@ Crie uma conta normalmente pelo site e promova-a a admin diretamente no Atlas:
 
 ---
 
-## 📌 Observações Técnicas
+## Observações Técnicas
 
 - A API do OpenWeatherMap gratuita oferece previsão em intervalos de 3h para os próximos 5 dias. Datas além desse período não exibem previsão climática.
 - O model `Agendamento` usa índice único `(medico, data, horario)` para garantir que não haja conflito de horários no banco.
@@ -284,7 +284,7 @@ Crie uma conta normalmente pelo site e promova-a a admin diretamente no Atlas:
 
 ---
 
-## 🧪 Acesso para Avaliação
+## Acesso para Avaliação
 
 O banco de dados já está populado com dados de demonstração. Use os seguintes acessos para testar o sistema:
 
@@ -298,7 +298,7 @@ O sistema conta com **10 médicos** de diferentes especialidades, **15 agendamen
 
 ---
 
-## 🌱 Resetar Dados de Demonstração
+## Resetar Dados de Demonstração
 
 Para repovoar o banco do zero a qualquer momento:
 
