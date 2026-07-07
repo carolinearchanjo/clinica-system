@@ -2,8 +2,6 @@
 
 Sistema web completo para gerenciamento de consultas médicas em clínicas de pequeno porte, com agendamento, gestão de médicos, controle de agenda e painel administrativo.
 
-**Deploy:** [clinica-system-coral.vercel.app](https://clinica-system-coral.vercel.app)
-
 ---
 
 ## Tecnologias
@@ -17,8 +15,6 @@ Sistema web completo para gerenciamento de consultas médicas em clínicas de pe
 | API de CEP | ViaCEP (https://viacep.com.br) |
 | API de Clima | OpenWeatherMap (forecast) |
 | Validação | express-validator |
-| Deploy Frontend | Vercel |
-| Deploy Backend | Railway |
 
 ---
 
@@ -103,7 +99,6 @@ clinica-system/
     │       ├── NovoAgendamentoView.vue
     │       └── PerfilView.vue
     ├── index.html
-    ├── vercel.json
     └── vite.config.js
 ```
 
@@ -148,13 +143,13 @@ npm run dev
 | `JWT_EXPIRES_IN` | Tempo de expiração do token | `7d` |
 | `OPENWEATHER_API_KEY` | Chave da API OpenWeatherMap | `abc123...` |
 | `OPENWEATHER_CITY` | Cidade padrão para previsão | `Rio de Janeiro` |
-| `FRONTEND_URL` | URL do frontend em produção | `https://clinica-system-coral.vercel.app` |
+| `FRONTEND_URL` | URL do frontend (CORS) | `http://localhost:5173` |
 
-### Variável de Ambiente (Frontend — Vercel)
+### Variável de Ambiente (Frontend)
 
 | Variável | Descrição | Exemplo |
 |---|---|---|
-| `VITE_API_URL` | URL base do backend | `https://seu-backend.up.railway.app/api` |
+| `VITE_API_URL` | URL base do backend | `http://localhost:3000/api` |
 
 ---
 
@@ -242,35 +237,9 @@ npm run dev
 
 ---
 
-## Deploy
-
-### Backend — Railway
-1. Conectar repositório GitHub
-2. Configurar **Root Directory** como `backend`
-3. Adicionar variáveis de ambiente na aba **Variables**
-4. Gerar domínio em **Settings → Networking → Generate Domain**
-
-### Frontend — Vercel
-1. Conectar repositório GitHub
-2. Configurar **Root Directory** como `frontend`
-3. Adicionar variável `VITE_API_URL` apontando para o backend do Railway
-4. Deploy automático a cada push na branch `main`
-
-### MongoDB — Atlas
-1. Criar cluster gratuito em [mongodb.com/atlas](https://mongodb.com/atlas)
-2. Criar usuário em **Database Access**
-3. Liberar IPs em **Network Access → Allow Access from Anywhere**
-4. Copiar URI de conexão e adicionar `/clinica_db` antes do `?`
-
----
-
 ## Primeiro Usuário Admin
 
-Crie uma conta normalmente pelo site e promova-a a admin diretamente no Atlas:
-
-1. Atlas → **Browse Collections** → banco `clinica_db` → coleção `usuarios`
-2. Encontre o documento do seu usuário → clique em **Edit**
-3. Mude `perfil` de `"paciente"` para `"admin"` → **Update**
+Crie uma conta normalmente pelo site e promova-a a admin diretamente no banco de dados.
 
 ---
 
@@ -281,20 +250,6 @@ Crie uma conta normalmente pelo site e promova-a a admin diretamente no Atlas:
 - Médicos com agendamentos futuros confirmados não podem ser excluídos — apenas desativados.
 - Consultas nos status `cancelado` ou `realizado` são imutáveis.
 - Não é possível marcar uma consulta como `realizado` antes do horário agendado.
-
----
-
-## Acesso para Avaliação
-
-O banco de dados já está populado com dados de demonstração. Use os seguintes acessos para testar o sistema:
-
-| Perfil | E-mail | Senha |
-|---|---|---|
-| **Admin** | admin@clinicafacil.com | Admin@123 |
-| **Secretária** | secretaria@clinicafacil.com | Secr@123 |
-| **Paciente** | joao.silva@email.com | Paciente@123 |
-
-O sistema conta com **10 médicos** de diferentes especialidades, **15 agendamentos** distribuídos entre passados (realizados/cancelados) e futuros (agendados/confirmados), e **5 pacientes** cadastrados.
 
 ---
 
