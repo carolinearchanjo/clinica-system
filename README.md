@@ -123,6 +123,8 @@ clinica-system/
     │       └── PerfilView.vue
     ├── index.html
     └── vite.config.js
+    └── vercel.json
+
 ```
 
 ---
