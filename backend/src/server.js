@@ -15,7 +15,36 @@ const bloqueioRoutes = require("./routes/bloqueio.routes");
 
 const app = express();
 
-// Rate limiting
+//CORS
+const origensPermitidas = [
+  "http://localhost:5173",
+  "https://clinica-system-coral.vercel.app",
+  process.env.FRONTEND_URL,
+].filter(Boolean);
+
+const corsOptions = {
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    
+    if (
+      origensPermitidas.includes(origin) ||
+      origin.endsWith(".vercel.app")
+    ) {
+      return callback(null, true);
+    }
+    
+    return callback(null, false);
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+};
+
+app.use(cors(corsOptions));
+
+app.options("*", cors(corsOptions));
+
+// Rate Limiting
 const limiterGeral = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100,
@@ -40,28 +69,6 @@ const limiterLogin = rateLimit({
 
 app.use("/api", limiterGeral);
 app.use("/api/auth/login", limiterLogin);
-
-// CORS
-const origensPermitidas = [
-  "http://localhost:5173",
-  process.env.FRONTEND_URL,
-].filter(Boolean);
-
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      if (!origin) return callback(null, true);
-      if (
-        origensPermitidas.includes(origin) ||
-        origin.endsWith(".vercel.app")
-      ) {
-        return callback(null, true);
-      }
-      callback(new Error("Origem não permitida pelo CORS"));
-    },
-    credentials: true,
-  }),
-);
 
 app.use(express.json());
 app.use(morgan("dev"));
