@@ -4,17 +4,40 @@ Sistema web completo para gerenciamento de consultas médicas em clínicas de pe
 
 ---
 
+## Demonstração & Acesso Online
+
+- **Aplicação Online:** [https://clinica-system-coral.vercel.app]
+- **Hospedagem Frontend:** Vercel
+- **Hospedagem Backend:** Render
+- **Banco de Dados:** MongoDB Atlas
+
+---
+
+## Acessos para Teste (Seed)
+
+Para testar as diferentes permissões e recursos da aplicação, utilize os dados de acesso abaixo:
+
+| Perfil | E-mail | Senha |
+|---|---|---|
+| **Admin** | `admin@clinicafacil.com` | `Admin@123` |
+| **Secretária** | `secretaria@clinicafacil.com` | `Secr@123` |
+| **Paciente** | `joao.silva@email.com` | `Paciente@123` |
+
+---
+
 ## Tecnologias
 
 | Camada | Tecnologia |
 |---|---|
-| Frontend | Vue.js 3, Vue Router 4, Pinia, Vite |
-| Backend | Node.js, Express 4 |
-| Banco de dados | MongoDB + Mongoose |
-| Autenticação | JWT (jsonwebtoken) + bcryptjs |
-| API de CEP | ViaCEP (https://viacep.com.br) |
-| API de Clima | OpenWeatherMap (forecast) |
-| Validação | express-validator |
+| **Frontend** | Vue.js 3, Vue Router 4, Pinia, Vite |
+| **Backend** | Node.js, Express 4 |
+| **Banco de Dados** | MongoDB Atlas + Mongoose |
+| **Hospedagem** | Vercel (Frontend) & Render (Backend) |
+| **Autenticação** | JWT (jsonwebtoken) + bcryptjs |
+| **API de CEP** | ViaCEP (https://viacep.com.br) |
+| **API de Clima** | OpenWeatherMap (forecast) |
+| **Validação** | express-validator |
+
 
 ---
 
