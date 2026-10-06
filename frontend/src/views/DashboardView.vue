@@ -58,8 +58,8 @@
             <div class="ag-mes">{{ formatarMes(ag.data) }}</div>
           </div>
           <div class="ag-info">
-            <div class="ag-titulo">{{ ag.especialidade }}</div>
-            <div class="text-sm text-muted">Dr(a). {{ ag.medico }}</div>
+            <div class="ag-titulo">{{ ag.medico?.especialidade || ag.especialidade }}</div>
+            <div class="text-sm text-muted">Dr(a). {{ ag.medico?.nome || ag.medico }}</div>
             <div class="text-sm text-muted">🕐 {{ ag.horario }}</div>
           </div>
           <div class="ag-right">
